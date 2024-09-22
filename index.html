@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de juros</title>
+    <style>
+        .container{
+            width: 600px;
+            margin:0 auto;
+            text-align: center;
+        }
+        svg{
+            
+            margin-top:20px;
+        }
+        .tooltip{
+            position:absolute;
+            background-color: #f0f0f0;
+            padding: 5px;
+            border: 1px solid #ccc;
+            display: none;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulador de juros compostos</h1>
+        <form action="#" id="inputForm">
+            <label for="valor">Insira um valor em reais:</label><br>
+            <input id="valor" type="number">
+            <br>
+            <label for="juros">Insira um valor de juros:</label><br>
+            <input id="juros" type="number">
+            <br>
+            <label for="anos">Insira um valor em anos:</label><br>
+            <input id="anos" type="number">
+            <br>
+            <button type="submit">Gerar gráfico</button>
+            
+        </form>
+
+        <svg id="graph" width="600" height="400" ></svg>
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+    <script>
+        const form = document.getElementById("inputForm");
+        const svg = document.getElementById("graph");
+        const tooltip = document.getElementById("tooltip");
+
+        form.addEventListener("submit",function(event){
+            event.preventDefault();
+
+            svg.innerHTML='';
+            tooltip.style.display = 'none';
+
+
+            //Valores do formulário
+            const valor = parseFloat(document.getElementById("valor").value);
+            const juros = parseFloat(document.getElementById("juros").value)/100;
+            const anos = parseInt(document.getElementById("anos").value);
+
+
+            //Config do gráfico
+            const width=600;
+            const height=400;
+            const padding=40;
+
+            //Cálcula os valores dos juros compostos para cada ano
+            let data = [];
+            for(let t =0;t<=anos;t++){
+                const quantia = valor * Math.pow(1+juros,t);
+                const juro = quantia - valor;
+                data.push({ano: t,quantia: quantia, juro: juro});
+                
+            }
+
+            //Escalar o gráfico
+            const quantiaMaxima = Math.max(...data.map(d => d.quantia));
+
+            //Escala de anos e vetores
+            const escalaX = (width - padding * 2)/anos;
+            const escalaY = (height- padding * 2)/quantiaMaxima;
+
+            // Desenha os eixos
+            svg.innerHTML += `<line x1="${padding}" y1="${height - padding}" x2="${width}" y2="${height - padding}" stroke="black"/>`;
+            svg.innerHTML += `<line x1="${padding}" y1="${height - padding}" x2="${padding}" y2="0" stroke="black"/>`;
+
+            //Desenha o gráfico
+            let pontos = '';
+            for(let i =0; i<data.length;i++){
+                const x = padding + i * escalaX;
+                const y = height - padding - data[i].quantia * escalaY;
+                pontos+= `${x},${y} `;
+            // Desenha pontos interativos
+            svg.innerHTML += `<circle cx="${x}" cy="${y}" r="5" fill="red" class="point" data-year="${data[i].ano}" data-amount="${data[i].quantia.toFixed(2)}" data-interest="${data[i].juro.toFixed(2)}"/>`;
+            }
+
+            svg.innerHTML += `<polyline points="${pontos}" fill="none" stroke="blue" stroke-width="2"/>`;
+
+            // Adiciona rótulos
+            svg.innerHTML += `<text x="${width / 2}" y="${height}" fill="black" text-anchor="middle">Anos</text>`;
+            svg.innerHTML += `<text x="0" y="${height / 2}" fill="black" text-anchor="middle" transform="rotate(-90, 15, ${height / 2})">Montante (R$)</text>`;
+
+// Tooltip interativo para os pontos
+const pointsElements = document.querySelectorAll('.point');
+            pointsElements.forEach(point => {
+                point.addEventListener('mouseover', (event) => {
+                    const year = event.target.getAttribute('data-year');
+                    const amount = event.target.getAttribute('data-amount');
+                    const interest = event.target.getAttribute('data-interest');
+
+                    tooltip.innerHTML = `Ano: ${year}<br>Montante: R$ ${amount}<br>Juros: R$ ${interest}`;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = `${event.pageX + 10}px`;
+                    tooltip.style.top = `${event.pageY + 10}px`;
+                });
+
+                point.addEventListener('mouseout', () => {
+                    tooltip.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
